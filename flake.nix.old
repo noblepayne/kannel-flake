@@ -1,0 +1,57 @@
+{
+  description = "Kannel Gateway";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+  outputs = { self, nixpkgs, flake-utils }: 
+    flake-utils.lib.eachDefaultSystem (system:
+    let
+      pkgs = import nixpkgs { inherit system; };
+    in
+    {
+      defaultPackage = pkgs.stdenv.mkDerivation rec {
+        pname = "kannel";
+        version = "1.4.5";
+
+        src = pkgs.fetchurl {
+          url = "https://www.kannel.org/download/1.4.5/gateway-1.4.5.tar.bz2";
+          sha256 = "r/Q8nGuzcfcygO0HOFMjubQjY1Ac/hPF7O+SXdkmxgw=";
+        };
+
+        patches = pkgs.fetchurl {
+          url = "https://redmine.kannel.org/attachments/download/327/gateway-1.4.5.patch.gz";
+          sha256 = "0GC1mgRsgeHfAJyXrdRYnlLvUd4TEqUgdsVZS0z2jRI=";
+        };
+
+        nativeBuildInputs = [
+          pkgs.autoconf
+          pkgs.automake
+          pkgs.libtool
+          pkgs.gnumake
+          pkgs.gnused
+          pkgs.bison
+          pkgs.pkgconfig
+	  pkgs.gettext
+        ];
+
+        buildInputs = [
+          pkgs.libxml2
+          pkgs.hiredis
+        ];
+
+        buildPhase = ''
+	  export CFLAGS="$CFLAGS-fcommon"
+	  ./configure --prefix="$out"
+          touch .depend
+	  make depend
+          make
+        '';
+
+        installPhase = ''
+          make install
+        '';
+      };
+    });
+}
+
