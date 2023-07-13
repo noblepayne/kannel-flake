@@ -8,6 +8,9 @@
     flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import nixpkgs { inherit system; };
+      # oldbison = pkgs.bison.overrideAttrs {
+      #   version = "3.3.1";
+      # };
       kannel = pkgs.stdenv.mkDerivation rec {
         pname = "kannel";
         version = "1.4.5";
@@ -17,15 +20,19 @@
           sha256 = "r/Q8nGuzcfcygO0HOFMjubQjY1Ac/hPF7O+SXdkmxgw=";
         };
 
+	patches = [
+	  ./skip_bison.patch
+	];
+
 	# Necessary to support modern bison.
 	# See TODO
-        patches = pkgs.fetchurl {
-          url = "https://redmine.kannel.org/attachments/download/327/gateway-1.4.5.patch.gz";
-          sha256 = "0GC1mgRsgeHfAJyXrdRYnlLvUd4TEqUgdsVZS0z2jRI=";
-        };
+        # patches = pkgs.fetchurl {
+        #   url = "https://redmine.kannel.org/attachments/download/327/gateway-1.4.5.patch.gz";
+        #   sha256 = "0GC1mgRsgeHfAJyXrdRYnlLvUd4TEqUgdsVZS0z2jRI=";
+        # };
 
         nativeBuildInputs = [
-	  pkgs.bison
+	  # pkgs.bison  - Only needed if making updates to wmlscript/wsgram.y.
           pkgs.gettext
         ];
 
@@ -44,6 +51,13 @@
 	  "--with-redis-dir=$pkgs.hiredis"
 	  "--enable-pcre"
 	];
+
+	# Use provided wsgram.c and wsgram.h.
+	# Must apply above patch or use SVN version of kannel if you wish to build via bison 3.
+	# TODO: turn into an actual patch to apply?
+	# preBuild = ''
+	#   rm wmlscript/wsgram.y
+	# '';
 	
 	doCheck = true;
 
